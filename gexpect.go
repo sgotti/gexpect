@@ -17,6 +17,7 @@ import (
 
 type ExpectSubprocess struct {
 	Cmd          *exec.Cmd
+	Output       io.Writer
 	buf          *buffer
 	outputBuffer []byte
 }
@@ -25,6 +26,7 @@ type buffer struct {
 	f       *os.File
 	b       bytes.Buffer
 	collect bool
+	output  io.Writer
 
 	collection bytes.Buffer
 }
@@ -53,6 +55,11 @@ func (buf *buffer) Read(chunk []byte) (int, error) {
 		nread = n
 	}
 	fn, err := buf.f.Read(chunk[nread:])
+	if fn > 0 {
+		if n, err := buf.output.Write(chunk[nread : nread+fn]); err != nil {
+			return n + nread, err
+		}
+	}
 	return fn + nread, err
 }
 
@@ -88,6 +95,11 @@ func (buf *buffer) ReadRune() (r rune, size int, err error) {
 			r, rL := utf8.DecodeRune(chunk)
 			if buf.collect {
 				buf.collection.WriteRune(r)
+			}
+			if fn > 0 {
+				if _, err := buf.output.Write(chunk[l : l+fn]); err != nil {
+					return r, rL, err
+				}
 			}
 			return r, rL, nil
 		}
@@ -354,6 +366,18 @@ func (expect *ExpectSubprocess) Interact() {
 	go io.Copy(expect.buf.f, os.Stdin)
 }
 
+func (expect *ExpectSubprocess) Continue() {
+	go func() {
+		for {
+			chunk := make([]byte, 255)
+			_, err := expect.buf.Read(chunk)
+			if err != nil {
+				return
+			}
+		}
+	}()
+}
+
 func (expect *ExpectSubprocess) ReadUntil(delim byte) ([]byte, error) {
 	join := make([]byte, 1, 512)
 	chunk := make([]byte, 255)
@@ -396,7 +420,9 @@ func _start(expect *ExpectSubprocess) (*ExpectSubprocess, error) {
 	if err != nil {
 		return nil, err
 	}
+	expect.buf = new(buffer)
 	expect.buf.f = f
+	expect.buf.output = expect.Output
 
 	return expect, nil
 }
