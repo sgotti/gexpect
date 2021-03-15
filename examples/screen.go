@@ -1,8 +1,11 @@
 package main
 
-import "github.com/steveeJ/gexpect"
-import "fmt"
-import "strings"
+import (
+	"fmt"
+	"strings"
+
+	"github.com/sgotti/gexpect"
+)
 
 func main() {
 	waitChan := make(chan string)

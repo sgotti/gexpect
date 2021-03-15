@@ -1,7 +1,10 @@
 package main
 
-import "github.com/steveeJ/gexpect"
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/sgotti/gexpect"
+)
 
 func main() {
 	fmt.Printf("Starting python.. \n")

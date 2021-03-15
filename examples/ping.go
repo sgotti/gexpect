@@ -1,7 +1,10 @@
 package main
 
-import gexpect "github.com/steveeJ/gexpect"
-import "log"
+import (
+	"log"
+
+	gexpect "github.com/sgotti/gexpect"
+)
 
 func main() {
 	log.Printf("Testing Ping interact... \n")
